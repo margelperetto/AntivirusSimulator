@@ -13,7 +13,8 @@ public class MonitorReport {
 	@Override
 	public boolean equals(Object obj) {
 		MonitorReport other = (MonitorReport)obj;
-		return this.files.size() == other.files.size() && 
+		return this.files.size() == other.files.size() &&
+				this.deleteEvents.size() == other.deleteEvents.size() &&
 				this.totalLength == other.totalLength &&
 				this.validator == other.validator;
 	}

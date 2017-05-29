@@ -7,6 +7,8 @@ import java.util.List;
 
 import javax.swing.SwingWorker;
 
+import org.teste.avs.exceptions.MonitorAlreadyRunningException;
+
 public class MonitorFolder {
 
 	private File folderFile;
@@ -15,7 +17,7 @@ public class MonitorFolder {
 	private long timeInterval = 3000;
 	private List<String> monitoringFileNamesToDelete = new LinkedList<>();
 	
-	public MonitorFolder(File folderPath) throws Exception{
+	public MonitorFolder(File folderPath) throws FileNotFoundException, IllegalArgumentException{
 		this.folderFile = folderPath;
 		
 		if(folderFile==null || !folderFile.exists()){
@@ -26,15 +28,16 @@ public class MonitorFolder {
 		}
 	}
 	
-	public void startMonitoring(final MonitorFolderListener listener){
+	public synchronized void startMonitoring(final MonitorFolderListener listener) throws MonitorAlreadyRunningException{
 		if(monitoring){
-			throw new RuntimeException("Monitor is already running!");
+			throw new MonitorAlreadyRunningException();
 		}
 		monitoring = true;
 		
 		new SwingWorker<Void, MonitorReport>() {
 			@Override
 			protected Void doInBackground() throws Exception {
+				System.out.println("MONITOR STARTED!");
 				while (monitoring) {
 					MonitorReport report = new MonitorReport();
 					populateAllFilesAndFolders(folderFile, report);
@@ -59,17 +62,21 @@ public class MonitorFolder {
 				} catch (Exception e) {
 					e.printStackTrace();
 				} finally {
+					System.out.println("MONITOR STOPED!");
 					monitoring = false;
 				}
 			}
 		}.execute();
 	}
 	
-	public boolean addFileNameToDelete(String fileName){
+	public boolean addFileNameToDelete(String fileName) throws IllegalArgumentException{
 		if(fileName==null || fileName.trim().isEmpty()){
 			return false;
 		}
 		synchronized (monitoringFileNamesToDelete) {
+			if(monitoringFileNamesToDelete.contains(fileName)){
+				throw new IllegalArgumentException("File name is already being monitored!");
+			}
 			monitoringFileNamesToDelete.add(fileName);
 		}
 		return true;

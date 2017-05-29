@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -21,6 +23,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 
+import org.teste.avs.exceptions.MonitorAlreadyRunningException;
 import org.teste.avs.monitor.DeleteEvent;
 import org.teste.avs.monitor.MonitorFolder;
 import org.teste.avs.monitor.MonitorFolderListener;
@@ -38,26 +41,28 @@ import net.miginfocom.swing.MigLayout;
 @SuppressWarnings("serial")
 public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 
-	private JButton jbNewMonitor = new JButton("New Monitoring");
+	private JButton jbStartNewMonitor = new JButton("Start new monitoring");
 	private JButton jbPauseMonitor = new JButton("Stop");
 	private JButton jbResumeMonitor = new JButton("Resume");
 	private JButton jbAddFileName = new JButton("Add monitored filename");
 	private JButton jbRemoveFileName = new JButton("Remove selected");
-	private JLabel jlStatus = new JLabel("Status: Not started");
 	private JTextField jtfFolder = new JTextField();
+	private JTextField jtfStatus = new JTextField();
+	private JTextField jtfTimeOfLastChange = new JTextField();
 	private GenericTableModel<MonitoredFile> tmMonitoredFiles;
 	private GenericTableModel<DeleteEvent> tmDeleteEvents;
 	private GenericTableModel<FileNameToDelete> tmFilesNamesToDelete;
 	private JTable jtFileNamesToDelete;
 	private MonitorFolder monitor;
+	private DateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
 
 	public JFMonitorFolder() {
 
-		jbNewMonitor.addActionListener((evt)->{
+		jbStartNewMonitor.addActionListener((evt)->{
 			newMonitoring();
 		});
 		jbPauseMonitor.addActionListener((evt)->{
-			pause();
+			stop();
 		});
 		jbResumeMonitor.addActionListener((evt)->{
 			resume();
@@ -74,7 +79,7 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		TableField[] fieldsDelete = builderDelete
 				.field("filePath", "Path").add()
 				.field("date", "Time").renderer(new DateCellRenderer("HH:mm:ss")).width("80!").add()
-				.field("successfullyDeleted", "Delete").renderer(new BooleanCellRenderer()).width("70!").add()
+				.field("successfullyDeleted", "Deleted").renderer(new BooleanCellRenderer()).width("70!").add()
 				.build();
 		tmDeleteEvents = new GenericTableModel<>(fieldsDelete);
 
@@ -87,21 +92,23 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 
 		TableFieldBuilder builderFileNames = new TableFieldBuilder(FileNameToDelete.class);
 		TableField[] fieldsFileNames = builderFileNames
-				.field("fileName", "Filename").add()
+				.field("fileName", "Monitored filenames").add()
 				.build();
 		tmFilesNamesToDelete = new GenericTableModel<>(fieldsFileNames);
 		jtFileNamesToDelete = new JTable(tmFilesNamesToDelete);
 		jtFileNamesToDelete.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
 		jtfFolder.setEditable(false);
+		jtfStatus.setEditable(false);
+		jtfTimeOfLastChange.setEditable(false);
 		jtfFolder.setVisible(false);
 		
-		JLabel jlWarning = new JLabel("!!! MONITORED FILES WILL BE DELETED !!!");
+		JLabel jlWarning = new JLabel("!!! MONITORED FILES WILL BE DELETED !!!", JLabel.CENTER);
 		jlWarning.setFont(jlWarning.getFont().deriveFont(Font.BOLD));
 		jlWarning.setForeground(Color.ORANGE.darker());
 		
 		JPanel jpDeleteFileNames = new JPanel(new MigLayout(new LC().noGrid().insetsAll("0")));
-		jpDeleteFileNames.add(jlWarning, new CC().wrap());
+		jpDeleteFileNames.add(jlWarning, new CC().alignX("center").wrap());
 		jpDeleteFileNames.add(jbAddFileName, new CC());
 		jpDeleteFileNames.add(jbRemoveFileName, new CC().wrap());
 		jpDeleteFileNames.add(new JScrollPane(jtFileNamesToDelete), new CC().width("0:100%:").height("50:100%:"));
@@ -111,10 +118,13 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		jpDeleteEvents.add(new JScrollPane(new JTable(tmDeleteEvents)), new CC().width("0:100%:").height("50:100%:"));
 
 		setLayout(new MigLayout(new LC().hideMode(3).noGrid()));
-		add(jbNewMonitor, new CC());
+		add(jbStartNewMonitor, new CC().gapRight("10"));
 		add(jbPauseMonitor, new CC());
 		add(jbResumeMonitor, new CC());
-		add(jlStatus, new CC().wrap());
+		add(new JLabel("Status"), new CC());
+		add(jtfStatus, new CC().width("150::"));
+		add(new JLabel("Last change"), new CC());
+		add(jtfTimeOfLastChange, new CC().width("150::").wrap());
 		add(jtfFolder, new CC().width("0:100%:").wrap());
 		add(new JSeparator(), new CC().width("100%").wrap());
 		
@@ -136,6 +146,7 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		try {
 			FileNameToDelete selec = tmFilesNamesToDelete.getSelected();
 			if(selec==null){
+				JOptionPane.showMessageDialog(this, "Select an item from table!", "Warning", JOptionPane.WARNING_MESSAGE);
 				return;
 			}
 			tmFilesNamesToDelete.remove(selec);
@@ -144,8 +155,7 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 				monitor.removeFileNameToDelete(selec.fileName);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Error remove filename! \n"+e.getMessage(),"Erro", JOptionPane.ERROR_MESSAGE);
+			error(e);
 		}
 	}
 
@@ -155,14 +165,21 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 			if(name==null || name.trim().isEmpty()){
 				return;
 			}
-			tmFilesNamesToDelete.add(new FileNameToDelete(name));
+			FileNameToDelete fntod = new FileNameToDelete(name);
+			
+			if(tmFilesNamesToDelete.getData().contains(fntod)){
+				JOptionPane.showMessageDialog(this, "File name has already been added!", "Warning", JOptionPane.WARNING_MESSAGE);
+				return;
+			}
+			tmFilesNamesToDelete.add(fntod);
 			
 			if(monitor!=null){
 				monitor.addFileNameToDelete(name);
 			}
+		} catch (IllegalArgumentException e) {
+			JOptionPane.showMessageDialog(this, e.getMessage(), "Warning", JOptionPane.WARNING_MESSAGE);
 		} catch (Exception e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Error add filename! \n"+e.getMessage(),"Erro", JOptionPane.ERROR_MESSAGE);
+			error(e);
 		}
 	}
 
@@ -170,19 +187,30 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		if(verifyMonitorNotStarted()){
 			return;
 		}
-		monitor.startMonitoring(this);
+		try {
+			monitor.startMonitoring(this);
+			jtfStatus.setText("RESUMED");
+		} catch (MonitorAlreadyRunningException e) {
+			JOptionPane.showMessageDialog(this, e.getMessage(), "Warning", JOptionPane.WARNING_MESSAGE);
+		} catch (Exception e) {
+			error(e);
+		}
 	}
 
-	private void pause() {
-		if(verifyMonitorNotStarted()){
-			return;
-		}
+	private void stop() {
 		try {
+			if(verifyMonitorNotStarted()){
+				return;
+			}
+			if(!monitor.isMonitoring()){
+				JOptionPane.showMessageDialog(this, "Monitor is already stoped!!", "Warning", JOptionPane.WARNING_MESSAGE);
+				return;
+			}
 			monitor.stopMonitoring();
 			Thread.sleep(monitor.getTimeInterval());
-			jlStatus.setText("Status: STOPED");
+			jtfStatus.setText("STOPED");
 		} catch (Exception e) {
-			e.printStackTrace();
+			error(e);
 		}
 	}
 
@@ -197,7 +225,7 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 	private void newMonitoring(){
 		try {
 			if(monitor!=null && monitor.isMonitoring()){
-				JOptionPane.showMessageDialog(this, "Monitor is already running!! Pause monitor and repeat operation.", "Warning", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(this, "Monitor is running!! Stop monitor and repeat operation.", "Warning", JOptionPane.WARNING_MESSAGE);
 				return;
 			}
 
@@ -213,13 +241,13 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 			}
 			monitor.startMonitoring(this);
 
-			jlStatus.setText("Status: WAITING");
+			jtfStatus.setText("WAITING");
 			jtfFolder.setVisible(true);
 			jtfFolder.setText(folderPath.getAbsolutePath());
-
+		} catch (IllegalArgumentException|FileNotFoundException e) {
+			JOptionPane.showMessageDialog(this, "Could not start monitoring! \n"+e.getMessage(), "Warning", JOptionPane.WARNING_MESSAGE);
 		} catch (Exception e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Error starting monitoring! \n"+e.getMessage(),"Erro", JOptionPane.ERROR_MESSAGE);
+			error(e);
 		}
 	}
 
@@ -254,6 +282,11 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		public FileNameToDelete(String fileName) {
 			this.fileName = fileName;
 		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return this.fileName.equals(((FileNameToDelete)obj).fileName);
+		}
 	}
 
 	@Override
@@ -264,6 +297,16 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		}
 		tmMonitoredFiles.setData(data);
 		tmDeleteEvents.addData(report.getDeleteEvents());
-		jlStatus.setText("Status: MONITORING - Last: "+new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));
+		jtfStatus.setText("MONITORING");
+		jtfTimeOfLastChange.setText(sdf.format(new Date()));
+	}
+	
+	private void error(Exception e) {
+		if(e==null){
+			JOptionPane.showMessageDialog(this, "Catastrophic error!","Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		e.printStackTrace();
+		JOptionPane.showMessageDialog(this, "Error! \n"+e.getMessage(),"Error", JOptionPane.ERROR_MESSAGE);
 	}
 }
