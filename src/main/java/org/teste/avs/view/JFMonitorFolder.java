@@ -98,10 +98,10 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		jtFileNamesToDelete = new JTable(tmFilesNamesToDelete);
 		jtFileNamesToDelete.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
+		jtfFolder.setToolTipText("Monitored folder");
 		jtfFolder.setEditable(false);
 		jtfStatus.setEditable(false);
 		jtfTimeOfLastChange.setEditable(false);
-		jtfFolder.setVisible(false);
 		
 		JLabel jlWarning = new JLabel("!!! MONITORED FILES WILL BE DELETED !!!", JLabel.CENTER);
 		jlWarning.setFont(jlWarning.getFont().deriveFont(Font.BOLD));
@@ -131,8 +131,8 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 		add(new JLabel("Monitored files and folders"), new CC().wrap());
 		add(new JScrollPane(new JTable(tmMonitoredFiles)), new CC().width("750:100%:").height("50:65%:").wrap());
 		
-		add(jpDeleteEvents, new CC().width("100%").height("35%"));
-		add(jpDeleteFileNames, new CC().height("35%:"));
+		add(jpDeleteEvents, new CC().width("100%").height("35%").growY());
+		add(jpDeleteFileNames, new CC().growY());
 
 		pack();
 		setMinimumSize(getSize());
@@ -242,7 +242,6 @@ public class JFMonitorFolder extends JFrame implements MonitorFolderListener{
 			monitor.startMonitoring(this);
 
 			jtfStatus.setText("WAITING");
-			jtfFolder.setVisible(true);
 			jtfFolder.setText(folderPath.getAbsolutePath());
 		} catch (IllegalArgumentException|FileNotFoundException e) {
 			JOptionPane.showMessageDialog(this, "Could not start monitoring! \n"+e.getMessage(), "Warning", JOptionPane.WARNING_MESSAGE);
