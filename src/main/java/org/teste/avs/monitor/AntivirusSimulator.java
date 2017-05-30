@@ -9,38 +9,38 @@ import javax.swing.SwingWorker;
 
 import org.teste.avs.exceptions.MonitorAlreadyRunningException;
 
-public class MonitorFolder {
+public class AntivirusSimulator {
 
-	private File folderFile;
+	private File rootFolder;
 	private boolean monitoring;
-	private MonitorReport lastMonitorReport;
+	private MonitoringReport lastMonitorReport;
 	private long timeInterval = 3000;
-	private List<String> monitoringFileNamesToDelete = new LinkedList<>();
-	
-	public MonitorFolder(File folderPath) throws FileNotFoundException, IllegalArgumentException{
-		this.folderFile = folderPath;
-		
-		if(folderFile==null || !folderFile.exists()){
+	private List<MonitoringRule> rules = new LinkedList<>();
+
+	public AntivirusSimulator(File folderPath) throws FileNotFoundException, IllegalArgumentException{
+		this.rootFolder = folderPath;
+
+		if(rootFolder==null || !rootFolder.exists()){
 			throw new FileNotFoundException("Folder '"+folderPath+"' not exists or is invalid!");
 		}
-		if(!folderFile.isDirectory()){
+		if(!rootFolder.isDirectory()){
 			throw new IllegalArgumentException("Path '"+folderPath+"' not a directory!");
 		}
 	}
-	
-	public synchronized void startMonitoring(final MonitorFolderListener listener) throws MonitorAlreadyRunningException{
+
+	public synchronized void startMonitoring(final AntivirusSimulatorListener listener) throws MonitorAlreadyRunningException{
 		if(monitoring){
 			throw new MonitorAlreadyRunningException();
 		}
 		monitoring = true;
-		
-		new SwingWorker<Void, MonitorReport>() {
+
+		new SwingWorker<Void, MonitoringReport>() {
 			@Override
 			protected Void doInBackground() throws Exception {
 				System.out.println("MONITOR STARTED!");
 				while (monitoring) {
-					MonitorReport report = new MonitorReport();
-					populateAllFilesAndFolders(folderFile, report);
+					MonitoringReport report = new MonitoringReport();
+					scanFonder(rootFolder, report);
 					if(lastMonitorReport==null || !lastMonitorReport.equals(report)){
 						publish(report);
 					}
@@ -50,9 +50,9 @@ public class MonitorFolder {
 				return null;
 			}
 			@Override
-			protected void process(List<MonitorReport> chunks) {
+			protected void process(List<MonitoringReport> chunks) {
 				if(listener!=null){
-					listener.loadMonitoredFiles(chunks.get(chunks.size()-1));
+					listener.scanningPerformed(chunks.get(chunks.size()-1));
 				}
 			}
 			@Override
@@ -68,57 +68,72 @@ public class MonitorFolder {
 			}
 		}.execute();
 	}
-	
-	public boolean addFileNameToDelete(String fileName) throws IllegalArgumentException{
-		if(fileName==null || fileName.trim().isEmpty()){
+
+	public boolean addRule(MonitoringRule rule) throws IllegalArgumentException{
+		if(rule.getMatch()==null || rule.getMatch().trim().isEmpty()){
 			return false;
 		}
-		synchronized (monitoringFileNamesToDelete) {
-			if(monitoringFileNamesToDelete.contains(fileName)){
-				throw new IllegalArgumentException("File name is already being monitored!");
+		synchronized (rules) {
+			if(rules.contains(rule)){
+				throw new IllegalArgumentException("This rule is already exists!");
 			}
-			monitoringFileNamesToDelete.add(fileName);
+			rules.add(rule);
 		}
 		return true;
 	}
-	
-	public boolean removeFileNameToDelete(String fileName){
-		if(fileName==null || fileName.trim().isEmpty() ){
+
+	public boolean removeRule(MonitoringRule rule){
+		if(rule==null){
 			return false;
 		}
-		synchronized (monitoringFileNamesToDelete) {
-			return monitoringFileNamesToDelete.remove(fileName);
+		synchronized (rules) {
+			return rules.remove(rule);
 		}
 	}
-	
-	private void populateAllFilesAndFolders(File folder, MonitorReport report) {
+
+	private void scanFonder(File folder, MonitoringReport report) {
 		try {
+			if(!folder.exists()){
+				if(rootFolder == folder){
+					report.setRootFolderMissing(true);
+				}
+				return;
+			}
+			
 			for(File f : folder.listFiles()){
-				
+
 				report.setTotalLength(report.getTotalLength() + f.length());
-				
+
 				if(f.isDirectory()){
 					report.addFile(f);
-					populateAllFilesAndFolders(f, report);
-				}else{
-					boolean deleteFile = false;
-					
-					synchronized (monitoringFileNamesToDelete) {
-						deleteFile = monitoringFileNamesToDelete.contains(f.getName());
-					}
-					
-					if(deleteFile){
-						DeleteEvent event = deleteFile(f);
-						deleteFile = event.isSuccessfullyDeleted();
-						report.getDeleteEvents().add(event);
-					}
-					if(!deleteFile){
-						report.addFile(f);
+					scanFonder(f, report);
+					return;
+				} 
+				
+				boolean deleteFile = false;
+
+				synchronized (rules) {
+					for (MonitoringRule rule : rules) {
+						if(rule.isMatchedTo(f.getName())){
+							deleteFile = true;
+							break;
+						}
 					}
 				}
+				
+				if(deleteFile){
+					DeleteEvent event = deleteFile(f);
+					report.addDeleteEvent(event);
+					if(!event.isSuccessfullyDeleted()){
+						report.addFile(f);
+					}
+				}else{
+					report.addFile(f);
+				}
+				
 			}
 		} catch (Exception e) {
-			System.err.println("Erro ao ler folder: "+folder.getAbsolutePath()+"! \n"+e.getMessage());
+			System.err.println("Error while reading directory: "+folder.getAbsolutePath()+"! \n"+e.getMessage());
 		}
 	}
 
@@ -139,7 +154,7 @@ public class MonitorFolder {
 	public void stopMonitoring(){
 		this.monitoring = false;
 	}
-	
+
 	public boolean isMonitoring(){
 		return monitoring;
 	}
@@ -151,5 +166,9 @@ public class MonitorFolder {
 	public void setTimeInterval(long timeInterval) {
 		this.timeInterval = timeInterval;
 	}
-	
+
+	public File getRootFolder() {
+		return rootFolder;
+	}
+
 }
