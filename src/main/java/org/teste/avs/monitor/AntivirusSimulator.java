@@ -99,37 +99,38 @@ public class AntivirusSimulator {
 				}
 				return;
 			}
-			
+
 			for(File f : folder.listFiles()){
 
 				report.setTotalLength(report.getTotalLength() + f.length());
 
-				if(f.isDirectory()){
+				if (f.isDirectory()) {
+					
 					report.addFile(f);
 					scanFonder(f, report);
-				} 
-				
-				boolean deleteFile = false;
+				} else {
 
-				synchronized (rules) {
-					for (MonitoringRule rule : rules) {
-						if(rule.isMatchedTo(f.getName())){
-							deleteFile = true;
-							break;
+					boolean deleteFile = false;
+
+					synchronized (rules) {
+						for (MonitoringRule rule : rules) {
+							if(rule.isMatchedTo(f.getName())){
+								deleteFile = true;
+								break;
+							}
 						}
 					}
-				}
-				
-				if(deleteFile){
-					DeleteEvent event = deleteFile(f);
-					report.addDeleteEvent(event);
-					if(!event.isSuccessfullyDeleted()){
+
+					if(deleteFile){
+						DeleteEvent event = deleteFile(f);
+						report.addDeleteEvent(event);
+						if(!event.isSuccessfullyDeleted()){
+							report.addFile(f);
+						}
+					}else{
 						report.addFile(f);
 					}
-				}else{
-					report.addFile(f);
 				}
-				
 			}
 		} catch (Exception e) {
 			System.err.println("Error while reading directory: "+folder.getAbsolutePath()+"! \n"+e.getMessage());
