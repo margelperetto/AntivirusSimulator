@@ -39,7 +39,7 @@ public class JDAddRule extends JDialog {
 		});
 		
 		setLayout(new MigLayout(new LC()));
-		add(new JLabel("File name to match"), new CC().wrap());
+		add(new JLabel("String to match"), new CC().wrap());
 		add(jtfMatch, new CC().width("250:100%:").wrap());
 		add(new JLabel("Match type"), new CC().wrap());
 		add(jcbMatchType, new CC().wrap());
