@@ -7,8 +7,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -22,6 +22,7 @@ import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingWorker;
 
 import org.teste.avs.exceptions.MonitorAlreadyRunningException;
 import org.teste.avs.monitor.DeleteEvent;
@@ -50,6 +51,7 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 	private JTextField jtfFolder = new JTextField();
 	private JTextField jtfStatus = new JTextField();
 	private JTextField jtfTimeOfLastChange = new JTextField();
+	private JTextField jtfDuration = new JTextField();
 	private GenericTableModel<MonitoredFile> tmMonitoredFiles;
 	private GenericTableModel<DeleteEvent> tmDeleteEvents;
 	private GenericTableModel<MonitoringRule> tmMonitoringRules;
@@ -103,6 +105,7 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 		jtfFolder.setEditable(false);
 		jtfStatus.setEditable(false);
 		jtfTimeOfLastChange.setEditable(false);
+		jtfDuration.setEditable(false);
 		
 		JLabel jlWarning = new JLabel("!!! MONITORED FILES WILL BE DELETED !!!", JLabel.CENTER);
 		jlWarning.setFont(jlWarning.getFont().deriveFont(Font.BOLD));
@@ -123,9 +126,11 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 		add(jbPauseMonitor, new CC());
 		add(jbResumeMonitor, new CC());
 		add(new JLabel("Status"), new CC());
-		add(jtfStatus, new CC().width("150::"));
+		add(jtfStatus, new CC().width("130::"));
 		add(new JLabel("Last change"), new CC());
-		add(jtfTimeOfLastChange, new CC().width("150::").wrap());
+		add(jtfTimeOfLastChange, new CC().width("130::"));
+		add(new JLabel("Duration"), new CC());
+		add(jtfDuration, new CC().width("70::").wrap());
 		add(jtfFolder, new CC().width("0:100%:").wrap());
 		add(new JSeparator(), new CC().width("100%").wrap());
 		
@@ -208,8 +213,34 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 				return;
 			}
 			monitor.stopMonitoring();
-			Thread.sleep(monitor.getTimeInterval());
-			jtfStatus.setText("STOPED");
+			
+			jtfStatus.setText("STOPING...");
+			jbStartNewMonitor.setEnabled(false);
+			jbPauseMonitor.setEnabled(false);
+			jbResumeMonitor.setEnabled(false);
+			new SwingWorker<Void, Void>() {
+				@Override
+				protected Void doInBackground() throws Exception {
+					while (!monitor.isFinished()) {
+						Thread.sleep(monitor.getTimeInterval());
+					}
+					return null;
+				}
+				@Override
+				protected void done() {
+					try {
+						get();
+					} catch (Exception e) {
+						error(e);
+					} finally {
+						jtfStatus.setText("STOPED");
+						jbStartNewMonitor.setEnabled(true);
+						jbPauseMonitor.setEnabled(true);
+						jbResumeMonitor.setEnabled(true);
+					}
+				}
+			}.execute();
+			
 		} catch (Exception e) {
 			error(e);
 		}
@@ -262,30 +293,33 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 	}
 
 	class MonitoredFile{
-		File file;
 		String path;
 		String type;
 
-		public MonitoredFile(File file) {
-			this.file = file;
-			if(file!=null){
-				this.path = file.getAbsolutePath();
-				this.type = file.isDirectory()?"Directory":"File";
-			}
+		public MonitoredFile(String path, String type) {
+			this.path = path;
+			this.type = type;
 		}
 
 	}
 
 	@Override
 	public void scanningPerformed(MonitoringReport report) {
-		List<MonitoredFile> data = new ArrayList<>(report.getFiles().size());
+		List<MonitoredFile> data = new LinkedList<>();
+		int limit = 500, count= 0;
 		for (File f : report.getFiles()) {
-			data.add(new MonitoredFile(f));
+			data.add(new MonitoredFile(f.getAbsolutePath(), f.isDirectory()?"Directory":"File"));
+			count++;
+			if(count>limit){
+				data.add(new MonitoredFile("...and more "+(report.getFiles().size()-limit)+" file(s)",""));
+				break;
+			}
 		}
 		tmMonitoredFiles.setData(data);
 		tmDeleteEvents.addData(report.getDeleteEvents());
 		jtfStatus.setText("MONITORING");
 		jtfTimeOfLastChange.setText(sdf.format(new Date()));
+		jtfDuration.setText(report.getDurationTime()/1000+" s");
 		if(report.isRootFolderMissing()){
 			jtfFolder.setForeground(Color.RED);
 			jtfFolder.setText("MISSING! "+monitor.getRootFolder().getAbsolutePath());

@@ -10,6 +10,7 @@ public class MonitoringReport {
 	private List<File> files = new LinkedList<>();
 	private List<DeleteEvent> deleteEvents = new LinkedList<>();
 	private boolean rootFolderMissing;
+	private long durationTime = System.currentTimeMillis();
 
 	@Override
 	public boolean equals(Object obj) {
@@ -56,6 +57,14 @@ public class MonitoringReport {
 
 	public void setRootFolderMissing(boolean rootFolderMissing) {
 		this.rootFolderMissing = rootFolderMissing;
+	}
+
+	public long getDurationTime() {
+		return durationTime;
+	}
+
+	public void setDurationTime(long durationTime) {
+		this.durationTime = durationTime;
 	}
 
 }

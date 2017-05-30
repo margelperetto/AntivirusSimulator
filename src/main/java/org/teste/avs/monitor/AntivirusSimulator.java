@@ -12,7 +12,7 @@ import org.teste.avs.exceptions.MonitorAlreadyRunningException;
 public class AntivirusSimulator {
 
 	private File rootFolder;
-	private boolean monitoring;
+	private boolean monitoring, finished;
 	private MonitoringReport lastMonitorReport;
 	private long timeInterval = 3000;
 	private List<MonitoringRule> rules = new LinkedList<>();
@@ -33,6 +33,7 @@ public class AntivirusSimulator {
 			throw new MonitorAlreadyRunningException();
 		}
 		monitoring = true;
+		finished = false;
 
 		new SwingWorker<Void, MonitoringReport>() {
 			@Override
@@ -41,6 +42,7 @@ public class AntivirusSimulator {
 				while (monitoring) {
 					MonitoringReport report = new MonitoringReport();
 					scanFonder(rootFolder, report);
+					report.setDurationTime(System.currentTimeMillis() - report.getDurationTime());
 					if(lastMonitorReport==null || !lastMonitorReport.equals(report)){
 						publish(report);
 					}
@@ -64,6 +66,7 @@ public class AntivirusSimulator {
 				} finally {
 					System.out.println("MONITOR STOPED!");
 					monitoring = false;
+					finished = true;
 				}
 			}
 		}.execute();
@@ -109,31 +112,38 @@ public class AntivirusSimulator {
 					report.addFile(f);
 					scanFonder(f, report);
 				} else {
-
-					boolean deleteFile = false;
-
-					synchronized (rules) {
-						for (MonitoringRule rule : rules) {
-							if(rule.isMatchedTo(f.getName())){
-								deleteFile = true;
-								break;
-							}
-						}
-					}
-
-					if(deleteFile){
-						DeleteEvent event = deleteFile(f);
-						report.addDeleteEvent(event);
-						if(!event.isSuccessfullyDeleted()){
-							report.addFile(f);
-						}
-					}else{
-						report.addFile(f);
-					}
+					scanFile(f, report);
 				}
 			}
 		} catch (Exception e) {
 			System.err.println("Error while reading directory: "+folder.getAbsolutePath()+"! \n"+e.getMessage());
+		}
+	}
+
+	private void scanFile(File f, MonitoringReport report) {
+		try {
+			boolean deleteFile = false;
+
+			synchronized (rules) {
+				for (MonitoringRule rule : rules) {
+					if(rule.isMatchedTo(f.getName())){
+						deleteFile = true;
+						break;
+					}
+				}
+			}
+
+			if(deleteFile){
+				DeleteEvent event = deleteFile(f);
+				report.addDeleteEvent(event);
+				if(!event.isSuccessfullyDeleted()){
+					report.addFile(f);
+				}
+			}else{
+				report.addFile(f);
+			}
+		} catch (Exception e) {
+			System.err.println("Error while reading file: "+f.getAbsolutePath()+"! \n"+e.getMessage());
 		}
 	}
 
@@ -151,7 +161,7 @@ public class AntivirusSimulator {
 		return event;
 	}
 
-	public void stopMonitoring(){
+	public void stopMonitoring() throws Exception{
 		this.monitoring = false;
 	}
 
@@ -169,6 +179,10 @@ public class AntivirusSimulator {
 
 	public File getRootFolder() {
 		return rootFolder;
+	}
+
+	public boolean isFinished() {
+		return finished;
 	}
 
 }
