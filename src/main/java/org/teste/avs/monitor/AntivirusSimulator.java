@@ -107,7 +107,6 @@ public class AntivirusSimulator {
 				if(f.isDirectory()){
 					report.addFile(f);
 					scanFonder(f, report);
-					return;
 				} 
 				
 				boolean deleteFile = false;
