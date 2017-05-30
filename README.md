@@ -1,7 +1,7 @@
 # AntivirusSimulator
 This is the most dangerous project in the world, run at your own risk.
 
-## Para rodar
+## Compile with commands:
 ```
 $ git clone https://github.com/margelperetto/AntivirusSimulator.git
 $ cd AntivirusSimulator
