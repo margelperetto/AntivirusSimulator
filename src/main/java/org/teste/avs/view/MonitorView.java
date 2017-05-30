@@ -19,10 +19,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingWorker;
+import javax.swing.border.EmptyBorder;
 
 import org.teste.avs.exceptions.MonitorAlreadyRunningException;
 import org.teste.avs.monitor.DeleteEvent;
@@ -95,7 +97,8 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 		TableFieldBuilder builderRules = new TableFieldBuilder(MonitoringRule.class);
 		TableField[] fieldsRules = builderRules
 				.field("match", "Match").add()
-				.field("type", "Type").width("75!").add()
+				.field("matchType", "MatchType").width("75!").add()
+				.field("ruleType", "RuleType").width("80!").add()
 				.build();
 		tmMonitoringRules = new GenericTableModel<>(fieldsRules);
 		JTable jtRules = new JTable(tmMonitoringRules);
@@ -111,15 +114,25 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 		jlWarning.setFont(jlWarning.getFont().deriveFont(Font.BOLD));
 		jlWarning.setForeground(Color.ORANGE.darker());
 		
-		JPanel jpDeleteFileNames = new JPanel(new MigLayout(new LC().noGrid().insetsAll("0")));
-		jpDeleteFileNames.add(jlWarning, new CC().alignX("center").wrap());
-		jpDeleteFileNames.add(jbAddRule, new CC());
-		jpDeleteFileNames.add(jbRemoveRule, new CC().wrap());
-		jpDeleteFileNames.add(new JScrollPane(jtRules), new CC().width("0:100%:").height("50:100%:"));
+		JPanel jpMonitoringRules = new JPanel(new MigLayout(new LC().noGrid().insetsAll("0")));
+		jpMonitoringRules.add(jlWarning, new CC().alignX("center").wrap());
+		jpMonitoringRules.add(jbAddRule, new CC());
+		jpMonitoringRules.add(jbRemoveRule, new CC().wrap());
+		jpMonitoringRules.add(new JScrollPane(jtRules), new CC().width("0:100%:").height("100:100%:"));
 		
-		JPanel jpDeleteEvents = new JPanel(new MigLayout(new LC().noGrid().insetsAll("0")));
+		JPanel jpDeleteEvents = new JPanel(new MigLayout(new LC().noGrid().insets("0", "5", "0", "0")));
 		jpDeleteEvents.add(new JLabel("Delete events"), new CC().wrap());
-		jpDeleteEvents.add(new JScrollPane(new JTable(tmDeleteEvents)), new CC().width("0:100%:").height("50:100%:"));
+		jpDeleteEvents.add(new JScrollPane(new JTable(tmDeleteEvents)), new CC().width("0:100%:").height("100:100%:"));
+		
+		JPanel jpMonitorFiles = new JPanel(new MigLayout(new LC().insetsAll("0")));
+		jpMonitorFiles.add(new JLabel("Monitored files and folders"), new CC().wrap());
+		jpMonitorFiles.add(new JScrollPane(new JTable(tmMonitoredFiles)), new CC().width("750:100%:").height("80:100%:").wrap());
+		
+		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, jpMonitoringRules, jpDeleteEvents);
+		split.setBorder(new EmptyBorder(0, 0, 0, 0));
+		
+		JSplitPane split2 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, split, jpMonitorFiles);
+		split2.setBorder(new EmptyBorder(0, 0, 0, 0));
 
 		setLayout(new MigLayout(new LC().hideMode(3).noGrid()));
 		add(jbStartNewMonitor, new CC().gapRight("10"));
@@ -134,11 +147,7 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 		add(jtfFolder, new CC().width("0:100%:").wrap());
 		add(new JSeparator(), new CC().width("100%").wrap());
 		
-		add(new JLabel("Monitored files and folders"), new CC().wrap());
-		add(new JScrollPane(new JTable(tmMonitoredFiles)), new CC().width("750:100%:").height("50:65%:").wrap());
-		
-		add(jpDeleteEvents, new CC().width("100%").height("35%").growY());
-		add(jpDeleteFileNames, new CC().growY());
+		add(split2, new CC().width("100%").height("100%"));
 
 		pack();
 		setMinimumSize(getSize());

@@ -126,7 +126,7 @@ public class AntivirusSimulator {
 
 			synchronized (rules) {
 				for (MonitoringRule rule : rules) {
-					if(rule.isMatchedTo(f.getName())){
+					if(rule.isMatchedTo(f)){
 						deleteFile = true;
 						break;
 					}

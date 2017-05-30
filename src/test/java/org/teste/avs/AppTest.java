@@ -1,38 +1,27 @@
 package org.teste.avs;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import java.io.File;
 
-/**
- * Unit test for simple App.
- */
-public class AppTest 
-    extends TestCase
-{
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public AppTest( String testName )
-    {
-        super( testName );
-    }
+import javax.swing.JFileChooser;
 
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( AppTest.class );
-    }
+import org.junit.Test;
 
-    /**
-     * Rigourous Test :-)
-     */
-    public void testApp()
-    {
-        assertTrue( true );
-    }
+public class AppTest{
+    
+	@Test
+	public void teste(){
+
+		JFileChooser chooser = new JFileChooser();
+		chooser.setMultiSelectionEnabled(false);
+		chooser.showOpenDialog(null);
+
+		File f = chooser.getSelectedFile();
+		if(f==null){
+			return;
+		}
+		System.out.println(f.getAbsolutePath());
+		System.out.println(f.getPath());
+		System.out.println(f.getName());
+		System.out.println(f.getParent());
+	}
 }

@@ -1,13 +1,17 @@
 package org.teste.avs.monitor;
 
+import java.io.File;
+
 public class MonitoringRule {
 
 	private String match;
-	private RuleType type = RuleType.EQUAL_TO;
+	private MatchType matchType = MatchType.EQUAL_TO;
+	private RuleType ruleType = RuleType.FILE_NAME;
 	
-	public MonitoringRule(String match, RuleType type) {
+	public MonitoringRule(String match, MatchType mathType, RuleType ruleType) {
 		this.match = match;
-		this.type = type;
+		this.matchType = mathType;
+		this.ruleType = ruleType;
 	}
 	
 	public MonitoringRule() {
@@ -21,16 +25,17 @@ public class MonitoringRule {
 		this.match = match;
 	}
 	
-	public RuleType getType() {
-		return type;
+	public MatchType getMatchType() {
+		return matchType;
 	}
 	
-	public void setType(RuleType type) {
-		this.type = type;
+	public void setMatchType(MatchType type) {
+		this.matchType = type;
 	}
 	
-	public boolean isMatchedTo(String fileName){
-		return type.match(fileName, match);
+	public boolean isMatchedTo(File file){
+		String fileStr = ruleType.getStringToMatch(file);
+		return matchType.match(fileStr, match);
 	}
 	
 	@Override
@@ -39,10 +44,41 @@ public class MonitoringRule {
 			return false;
 		}
 		MonitoringRule  other = (MonitoringRule)obj;
-		return this.match.equals(other.match) && this.type.equals(other.type);
+		return this.match.equals(other.match) && this.matchType.equals(other.matchType);
 	}
 	
+	public RuleType getRuleType() {
+		return ruleType;
+	}
+
+	public void setRuleType(RuleType ruleType) {
+		this.ruleType = ruleType;
+	}
+
 	public static enum RuleType{
+		FILE_NAME() {
+			@Override
+			public String getStringToMatch(File file) {
+				return file.getName();
+			}
+		}, 
+		PATH() {
+			@Override
+			public String getStringToMatch(File file) {
+				return file.getParent();
+			}
+		}, 
+		ALL() {
+			@Override
+			public String getStringToMatch(File file) {
+				return file.getAbsolutePath();
+			}
+		};
+
+		public abstract String getStringToMatch(File file);
+	}
+	
+	public static enum MatchType{
 		EQUAL_TO(){
 			@Override
 			public boolean match(String fileName, String match) {
@@ -59,6 +95,12 @@ public class MonitoringRule {
 			@Override
 			public boolean match(String fileName, String match) {
 				return fileName.endsWith(match);
+			}
+		},
+		CONTAINS(){
+			@Override
+			public boolean match(String fileName, String match) {
+				return fileName.contains(match);
 			}
 		}
 		;

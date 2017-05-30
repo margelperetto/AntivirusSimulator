@@ -10,6 +10,7 @@ import javax.swing.JSeparator;
 import javax.swing.JTextField;
 
 import org.teste.avs.monitor.MonitoringRule;
+import org.teste.avs.monitor.MonitoringRule.MatchType;
 import org.teste.avs.monitor.MonitoringRule.RuleType;
 
 import net.miginfocom.layout.CC;
@@ -20,7 +21,8 @@ import net.miginfocom.swing.MigLayout;
 public class JDAddRule extends JDialog {
 
 	private JTextField jtfMatch = new JTextField();
-	private JComboBox<RuleType> jcbType = new JComboBox<>(RuleType.values());
+	private JComboBox<MatchType> jcbMatchType = new JComboBox<>(MatchType.values());
+	private JComboBox<RuleType> jcbRuleType = new JComboBox<>(RuleType.values());
 	private JButton jbAdd = new JButton("Add rule");
 	private JButton jbCancel = new JButton("Cancel");
 	private MonitoringRule rule;
@@ -38,9 +40,11 @@ public class JDAddRule extends JDialog {
 		
 		setLayout(new MigLayout(new LC()));
 		add(new JLabel("File name to match"), new CC().wrap());
-		add(jtfMatch, new CC().width("180:100%:").wrap());
+		add(jtfMatch, new CC().width("250:100%:").wrap());
 		add(new JLabel("Match type"), new CC().wrap());
-		add(jcbType, new CC().wrap());
+		add(jcbMatchType, new CC().wrap());
+		add(new JLabel("Compare with"), new CC().wrap());
+		add(jcbRuleType, new CC().wrap());
 		add(new JSeparator(), new CC().width("100%").wrap());
 		add(jbAdd, new CC().spanX().split());
 		add(jbCancel, new CC());
@@ -56,13 +60,14 @@ public class JDAddRule extends JDialog {
 	
 	private void addRule(){
 		String match = jtfMatch.getText();
-		RuleType type = (RuleType) jcbType.getSelectedItem();
+		MatchType matchType = (MatchType) jcbMatchType.getSelectedItem();
+		RuleType ruleType = (RuleType) jcbRuleType.getSelectedItem();
 		
 		if(match.trim().isEmpty()){
 			JOptionPane.showMessageDialog(this, "Enter a file name to match!", "Warning", JOptionPane.WARNING_MESSAGE);
 			return;
 		}
-		rule = new MonitoringRule(match, type);
+		rule = new MonitoringRule(match, matchType, ruleType);
 		dispose();
 	}
 	
