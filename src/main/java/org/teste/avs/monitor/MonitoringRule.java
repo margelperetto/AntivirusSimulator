@@ -8,9 +8,9 @@ public class MonitoringRule {
 	private MatchType matchType = MatchType.EQUAL_TO;
 	private RuleType ruleType = RuleType.FILE_NAME;
 	
-	public MonitoringRule(String match, MatchType mathType, RuleType ruleType) {
+	public MonitoringRule(String match, MatchType matchType, RuleType ruleType) {
 		this.match = match;
-		this.matchType = mathType;
+		this.matchType = matchType;
 		this.ruleType = ruleType;
 	}
 	
