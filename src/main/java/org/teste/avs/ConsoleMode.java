@@ -26,7 +26,7 @@ public class ConsoleMode {
 			antivirus.startMonitoring(null);
 
 			Thread.sleep(1000);
-			System.out.println("MONITORING: \n"+path+"\nPress a key to exit");
+			System.out.println("MONITORING: \n"+path+"\nPress a key to STOP");
 			Scanner scanner = new Scanner(System.in);
 			scanner.nextLine();
 			scanner.close();
@@ -40,10 +40,9 @@ public class ConsoleMode {
 		}
 	}
 
-	//[FILE_NAME|PATH|ALL]:[EQUAL_TO|STARTS_WITH|ENDS_WITH|CONTAINS]:[MATH]
 	private static MonitoringRule convertRule(String ruleStr) {
 		try {
-			String[] split = ruleStr.split(":");
+			String[] split = ruleStr.split("|");
 
 			RuleType ruleType = RuleType.valueOf(split[0]);
 			MatchType matchType = MatchType.valueOf(split[1]);
@@ -52,13 +51,13 @@ public class ConsoleMode {
 			return new MonitoringRule(match, matchType, ruleType);
 		} catch (Exception e) {
 			throw new IllegalArgumentException("Invalid rule! "+ruleStr+" \nUse format: "
-					+ "RULE_TYPE:MATCH_TYPE:MATCH \n\n"
+					+ "RULE_TYPE|MATCH_TYPE|MATCH \n\n"
 					+ "Where:\n"
 					+ "RULE TYPES: FILE_NAME PATH ALL \n"
 					+ "MATCH TYPES: EQUAL_TO STARTS_WITH ENDS_WITH CONTAINS \n"
 					+ "MATCH: file names or folder path etc\n\n"
 					+ "EXAMPLES: \n"
-					+ "FILE_NAME:EQUAL_TO:test.txt"
+					+ "FILE_NAME|EQUAL_TO|test.txt"
 					);
 		}
 	}

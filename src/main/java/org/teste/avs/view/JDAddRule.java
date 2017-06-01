@@ -20,7 +20,7 @@ import net.miginfocom.swing.MigLayout;
 @SuppressWarnings("serial")
 public class JDAddRule extends JDialog {
 
-	private JTextField jtfMatch = new JTextField();
+	private JTextField jtfMatchSentence = new JTextField();
 	private JComboBox<MatchType> jcbMatchType = new JComboBox<>(MatchType.values());
 	private JComboBox<RuleType> jcbRuleType = new JComboBox<>(RuleType.values());
 	private JButton jbAdd = new JButton("Add rule");
@@ -37,14 +37,13 @@ public class JDAddRule extends JDialog {
 			rule = null;
 			dispose();
 		});
+		jtfMatchSentence.setToolTipText("Match sentence");
 		
-		setLayout(new MigLayout(new LC()));
-		add(new JLabel("String to match"), new CC().wrap());
-		add(jtfMatch, new CC().width("250:100%:").wrap());
-		add(new JLabel("Match type"), new CC().wrap());
-		add(jcbMatchType, new CC().wrap());
-		add(new JLabel("Compare with"), new CC().wrap());
-		add(jcbRuleType, new CC().wrap());
+		setLayout(new MigLayout(new LC().gridGapY("5")));
+		add(new JLabel("<html><b>DELETE</b> files when</html>"), new CC().wrap());
+		add(jcbRuleType, new CC().growX().wrap());
+		add(jcbMatchType, new CC().growX().wrap());
+		add(jtfMatchSentence, new CC().width("250:100%:").wrap());
 		add(new JSeparator(), new CC().width("100%").wrap());
 		add(jbAdd, new CC().spanX().split());
 		add(jbCancel, new CC());
@@ -59,12 +58,13 @@ public class JDAddRule extends JDialog {
 	}
 	
 	private void addRule(){
-		String match = jtfMatch.getText();
+		String match = jtfMatchSentence.getText();
 		MatchType matchType = (MatchType) jcbMatchType.getSelectedItem();
 		RuleType ruleType = (RuleType) jcbRuleType.getSelectedItem();
 		
 		if(match.trim().isEmpty()){
-			JOptionPane.showMessageDialog(this, "Enter a file name to match!", "Warning", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Enter a match sentence!", "Warning", JOptionPane.WARNING_MESSAGE);
+			jtfMatchSentence.requestFocus();
 			return;
 		}
 		rule = new MonitoringRule(match, matchType, ruleType);
