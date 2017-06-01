@@ -36,6 +36,7 @@ C:\User\foo\test.txt | C:\User\foo | test.txt
 ## How to use it?
 There are two ways:
 1. **Graphical interface**: You just choose a folder and add rules;
+![alt text](https://github.com/margelperetto/AntivirusSimulator/blob/master/screenshot.JPG "ScreenShot")
 1. **Command Line**:
 ```
 $ java -jar AntiVirusSimulator-0.0.1-SNAPSHOT.jar [folder_path] [rule1] [rule2] [rule3] ...
