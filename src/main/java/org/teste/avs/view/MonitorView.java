@@ -96,9 +96,9 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 
 		TableFieldBuilder builderRules = new TableFieldBuilder(MonitoringRule.class);
 		TableField[] fieldsRules = builderRules
-				.field("match", "Match").add()
-				.field("matchType", "MatchType").width("75!").add()
-				.field("ruleType", "RuleType").width("80!").add()
+				.field("ruleType", "Rule Type").width("80!").add()
+				.field("matchType", "Match Type").width("75!").add()
+				.field("match", "Match With").add()
 				.build();
 		tmMonitoringRules = new GenericTableModel<>(fieldsRules);
 		JTable jtRules = new JTable(tmMonitoringRules);
@@ -110,9 +110,10 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 		jtfTimeOfLastChange.setEditable(false);
 		jtfDuration.setEditable(false);
 		
-		JLabel jlWarning = new JLabel("!!! MONITORED FILES WILL BE DELETED !!!", JLabel.CENTER);
+		JLabel jlWarning = new JLabel("!!! MATCHED FILES WILL BE DELETED !!!", JLabel.CENTER);
 		jlWarning.setFont(jlWarning.getFont().deriveFont(Font.BOLD));
-		jlWarning.setForeground(Color.ORANGE.darker());
+		jlWarning.setForeground(Color.RED.darker());
+		jlWarning.setToolTipText("...forever!");
 		
 		JPanel jpMonitoringRules = new JPanel(new MigLayout(new LC().noGrid().insetsAll("0")));
 		jpMonitoringRules.add(jlWarning, new CC().alignX("center").wrap());
