@@ -64,7 +64,7 @@ public class AntivirusSimulator {
 				} catch (Exception e) {
 					e.printStackTrace();
 				} finally {
-					System.out.println("MONITOR STOPED!");
+					System.out.println("MONITOR STOPPED!");
 					monitoring = false;
 					finished = true;
 				}
@@ -103,7 +103,11 @@ public class AntivirusSimulator {
 				return;
 			}
 
-			for(File f : folder.listFiles()){
+			File[] list = folder.listFiles();
+			if(list == null){
+				return;
+			}
+			for(File f : list){
 
 				report.setTotalLength(report.getTotalLength() + f.length());
 
@@ -146,7 +150,7 @@ public class AntivirusSimulator {
 			System.err.println("Error while reading file: "+f.getAbsolutePath()+"! \n"+e.getMessage());
 		}
 	}
-
+	
 	private DeleteEvent deleteFile(File f) {
 		DeleteEvent event = new DeleteEvent();
 		try {

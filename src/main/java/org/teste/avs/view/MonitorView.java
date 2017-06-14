@@ -219,12 +219,12 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 				return;
 			}
 			if(!monitor.isMonitoring()){
-				JOptionPane.showMessageDialog(this, "Monitor is already stoped!!", "Warning", JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showMessageDialog(this, "Monitor is already stopped!!", "Warning", JOptionPane.WARNING_MESSAGE);
 				return;
 			}
 			monitor.stopMonitoring();
 			
-			jtfStatus.setText("STOPING...");
+			jtfStatus.setText("STOPPING...");
 			jbStartNewMonitor.setEnabled(false);
 			jbPauseMonitor.setEnabled(false);
 			jbResumeMonitor.setEnabled(false);
@@ -243,7 +243,7 @@ public class MonitorView extends JFrame implements AntivirusSimulatorListener{
 					} catch (Exception e) {
 						error(e);
 					} finally {
-						jtfStatus.setText("STOPED");
+						jtfStatus.setText("STOPPED");
 						jbStartNewMonitor.setEnabled(true);
 						jbPauseMonitor.setEnabled(true);
 						jbResumeMonitor.setEnabled(true);
